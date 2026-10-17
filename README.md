@@ -60,12 +60,16 @@
    - **Support Desk & Contact Info**: Direct support contact email (`support@internflow.dev`) and 2-hour response guarantee.
    - **Floating Quick Help Launcher**: Accessible with 1 click from anywhere on the platform.
 
-7. **Design & UX Highlights**
-   - Modern glassmorphism navigation with live counters for saved and applied internships.
-   - Smooth entrance animations and micro-interactions.
-   - Floating toast notification system for instant user feedback.
-   - 100% responsive layout across mobile, tablet, and desktop viewports.
-   - Zero build step required — runs directly in any modern web browser.
+7. **Award-Winning Design & Power UX Highlights**
+   - **🌓 Sleek Dark & Light Mode Theme System**: Instant 1-click theme switcher in the navbar with persistent state.
+   - **🔊 Web Audio API Sound Feedback**: Subtle haptic chimes when toggling skills, saving roles, and submitting applications (with navbar mute toggle).
+   - **🎉 Confetti Celebration System**: Particle burst animation upon submitting internship applications.
+   - **📊 1-Click "Export Applications to CSV"**: Download full application records for offline tracking in Excel/Notion.
+   - **⚡ Keyboard Shortcuts (Power UX)**: Press `/` anywhere to jump to search; press `Esc` to close any modal.
+   - **⏳ Live Deadline Urgency Badges**: Dynamic `⏳ Xd left` countdown indicators on roles closing soon.
+   - **🛡️ Live Trust Statistics**: Hero badges highlighting guaranteed stipends, response times, and PPO opportunities.
+   - **✨ Glassmorphic Layout**: Frosted glass sticky navbar, smooth entrance transitions, and card lift hover animations.
+   - **📱 100% Responsive & Zero Build**: Runs immediately in any browser with zero installation or build steps.
 
 ---
 

@@ -59,6 +59,49 @@ function updateNavCounters() {
   }
 }
 
+// Audio Synthesizer Controller (Zero external dependencies)
+const AudioController = {
+  ctx: null,
+  enabled: localStorage.getItem('internflow_sound_enabled') !== 'false',
+  init() {
+    if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  },
+  play(type = 'pop') {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      if (type === 'pop') {
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(750, now + 0.08);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else if (type === 'success') {
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.1);
+        osc.frequency.setValueAtTime(783.99, now + 0.2);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      }
+    } catch(e) {}
+  }
+};
+
 // Toast Notifications
 function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
@@ -279,6 +322,20 @@ function createInternshipCardHtml(item) {
             <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
             ${item.duration}
           </span>
+          ${(() => {
+            const today = new Date();
+            const deadlineDate = new Date(item.deadline);
+            const diffDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+            if (diffDays > 0 && diffDays <= 45) {
+              return `
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-semibold border border-rose-200">
+                  <i data-lucide="hourglass" class="w-3.5 h-3.5 text-rose-500"></i>
+                  ${diffDays}d left
+                </span>
+              `;
+            }
+            return '';
+          })()}
         </div>
 
         <!-- Tags with AI Skill Overlap Highlighting -->
@@ -520,9 +577,11 @@ function toggleBookmark(id, event) {
 
   if (index > -1) {
     appState.savedIds.splice(index, 1);
+    AudioController.play('pop');
     showToast(`Removed from saved internships`, 'info');
   } else {
     appState.savedIds.push(id);
+    AudioController.play('pop');
     showToast(`Saved "${intern ? intern.title : 'Internship'}" for later!`, 'success');
   }
 
@@ -1151,6 +1210,10 @@ function handleApplicationSubmit(event, internshipId) {
   saveApplications();
   closeModal();
 
+  // Audio and confetti celebration
+  AudioController.play('success');
+  triggerConfetti();
+
   // Show celebration modal
   showApplicationSuccessModal(intern);
   
@@ -1449,6 +1512,21 @@ function setupEventListeners() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeModal();
+    }
+  });
+
+  // Shortcut: '/' key to focus search
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+      e.preventDefault();
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        if (appState.activeView !== 'browse') {
+          switchView('browse');
+        }
+        searchInput.focus();
+        searchInput.select();
+      }
     }
   });
 
@@ -1792,9 +1870,11 @@ function toggleUserSkill(skill) {
   const idx = appState.userSkills.indexOf(skill);
   if (idx > -1) {
     appState.userSkills.splice(idx, 1);
+    AudioController.play('pop');
     showToast(`Removed "${skill}" from skill profile`, 'info');
   } else {
     appState.userSkills.push(skill);
+    AudioController.play('pop');
     showToast(`Added "${skill}" to skill profile!`, 'success');
   }
   saveUserSkills();
@@ -1807,6 +1887,7 @@ function handleCustomSkillKeydown(event) {
     if (!val) return;
     if (!appState.userSkills.includes(val)) {
       appState.userSkills.push(val);
+      AudioController.play('pop');
       saveUserSkills();
       showToast(`Added "${val}" to your profile!`, 'success');
     }
@@ -1816,16 +1897,115 @@ function handleCustomSkillKeydown(event) {
 
 function resetUserSkills() {
   appState.userSkills = [...DEFAULT_USER_SKILLS];
+  AudioController.play('pop');
   saveUserSkills();
   showToast('Reset skills to default profile', 'info');
 }
 
+// ----------------- ADVANCED UI/UX UTILITIES -----------------
+
+// Theme Switcher (Dark / Light)
+function applySavedTheme() {
+  const savedTheme = localStorage.getItem('internflow_theme');
+  const icon = document.getElementById('theme-icon');
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+    if (icon) icon.setAttribute('data-lucide', 'sun');
+  } else {
+    document.documentElement.classList.remove('dark');
+    if (icon) icon.setAttribute('data-lucide', 'moon');
+  }
+}
+
+function toggleDarkMode() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('internflow_theme', isDark ? 'dark' : 'light');
+  const icon = document.getElementById('theme-icon');
+  if (icon) {
+    icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+    lucide.createIcons();
+  }
+  AudioController.play('pop');
+  showToast(isDark ? 'Dark mode enabled' : 'Light mode enabled', 'info');
+}
+
+// Sound FX Controller Toggle
+function toggleSoundEffects() {
+  AudioController.enabled = !AudioController.enabled;
+  localStorage.setItem('internflow_sound_enabled', AudioController.enabled);
+  const icon = document.getElementById('sound-icon');
+  if (icon) {
+    icon.setAttribute('data-lucide', AudioController.enabled ? 'volume-2' : 'volume-x');
+    lucide.createIcons();
+  }
+  if (AudioController.enabled) {
+    AudioController.play('pop');
+  }
+  showToast(AudioController.enabled ? 'Sound effects enabled' : 'Sound effects muted', 'info');
+}
+
+// Confetti Particle System
+function triggerConfetti() {
+  const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#3b82f6'];
+  for (let i = 0; i < 45; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.4 + 's';
+    piece.style.transform = `scale(${Math.random() * 0.8 + 0.6})`;
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 2600);
+  }
+}
+
+// Export Applications to CSV
+function exportApplicationsToCsv() {
+  if (!appState.applications || appState.applications.length === 0) {
+    showToast('No applications submitted yet to export', 'error');
+    return;
+  }
+
+  const headers = ['Company', 'Role Title', 'Domain', 'Workplace Type', 'Stipend', 'Status', 'Applied Date', 'Applicant Name', 'Email', 'Portfolio'];
+  const rows = appState.applications.map(app => {
+    const intern = appState.internships.find(i => i.id === app.internshipId) || app.internshipSnapshot || {};
+    return [
+      `"${(intern.company || '').replace(/"/g, '""')}"`,
+      `"${(intern.title || '').replace(/"/g, '""')}"`,
+      `"${(intern.domain || '').replace(/"/g, '""')}"`,
+      `"${(intern.workplaceType || '').replace(/"/g, '""')}"`,
+      `"${(intern.stipendFormatted || '').replace(/"/g, '""')}"`,
+      `"${(app.status || 'Applied').replace(/"/g, '""')}"`,
+      `"${new Date(app.appliedAt).toLocaleDateString()}"`,
+      `"${(app.applicant?.name || '').replace(/"/g, '""')}"`,
+      `"${(app.applicant?.email || '').replace(/"/g, '""')}"`,
+      `"${(app.applicant?.portfolio || '').replace(/"/g, '""')}"`
+    ].join(',');
+  });
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `InternFlow_Applications_${new Date().getFullYear()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  AudioController.play('success');
+  showToast('Applications spreadsheet exported to CSV!', 'success');
+}
+
 // Initial Boot
 document.addEventListener('DOMContentLoaded', () => {
+  applySavedTheme();
   setupEventListeners();
   updateNavCounters();
   renderSkillPills();
   renderInternshipList();
+
+  // Initialize audio controller on first user interaction
+  document.addEventListener('click', () => AudioController.init(), { once: true });
 
   // Check URL params for direct link: ?internship=int-001 or ?view=help
   const urlParams = new URLSearchParams(window.location.search);
