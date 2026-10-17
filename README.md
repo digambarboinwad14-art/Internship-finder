@@ -13,21 +13,28 @@
      - **Workplace Type**: Remote, Hybrid, In-Office.
      - **Duration**: 3 Months, 4 Months, 6 Months.
      - **Minimum Compensation / Stipend Slider**: Real-time slider from \$0 to \$3,500+/mo.
-     - **Sorting**: Latest Posted, Highest Stipend, Application Deadline soonest.
+      - **Sorting**: Latest Posted, Highest Stipend, Application Deadline soonest, and **Highest AI Skill Match**.
    - Quick-filter chips for instant search (React, Python, Figma, Remote Only).
 
-2. **Interactive Opportunity Details Modal**
+2. **🤖 AI Skill Match & Gap Analysis Engine**
+   - **Personalized Skills Selector**: Select or enter candidate technologies (React, Python, TypeScript, Figma, SQL, etc.).
+   - **Live Match % Badges**: Every role card dynamically calculates a match score (`🎯 95% Match`, `⚡ 75% Match`).
+   - **Visual Tag Overlap**: Tags matching your profile are highlighted in green with checkmarks.
+   - **Interactive Skill Gap Report**: Inside the Opportunity Details modal, view a breakdown of **Skills You Have** vs **Skills to Learn / Highlight**, accompanied by automated AI readiness guidance.
+
+3. **Interactive Opportunity Details Modal**
    - Deep dive into company background, compensation, location, workplace mode, and deadlines.
    - Comprehensive sections for Role Description, Key Responsibilities, Requirements & Qualifications, and Perks & Benefits.
+   - AI Compatibility Report with progress bar and personalized recommendations.
    - One-click bookmarking and shareable URL generator.
 
-3. **Application Submission Flow**
+4. **Application Submission Flow & ✨ 1-Click AI Pitch Generator**
    - Clean, validated application form:
      - Candidate Full Name, Email, and Phone
      - Portfolio / GitHub / LinkedIn profile link
      - Earliest start date and weekly availability (Full-time / Part-time / Flexible)
      - Interactive **Resume Upload Zone** supporting drag & drop or file browse with live file name & size display
-     - Personalized candidate pitch / cover note
+     - **✨ 1-Click AI Cover Pitch**: Generates an enthusiastic, tailored elevator pitch highlighting your specific skills and aligning them with the employer's domain.
    - Celebratory submission confirmation modal.
    - Duplicate application detection.
 

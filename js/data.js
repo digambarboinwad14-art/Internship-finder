@@ -396,3 +396,21 @@ const FAQS_DATA = [
     answer: "You can submit a direct inquiry using the <strong>'Have a Specific Query?'</strong> form on the right side of this Help page, or email our support desk directly at <strong>support@internflow.dev</strong>. We respond in under 2 hours during hiring season."
   }
 ];
+
+// Popular skills for AI matching engine
+const POPULAR_SKILLS = [
+  "React",
+  "TypeScript",
+  "Python",
+  "Tailwind CSS",
+  "Figma",
+  "SQL",
+  "Node.js",
+  "Machine Learning",
+  "UI/UX Design",
+  "Git",
+  "Docker",
+  "Next.js"
+];
+
+const DEFAULT_USER_SKILLS = ["React", "TypeScript", "Tailwind CSS", "Python"];

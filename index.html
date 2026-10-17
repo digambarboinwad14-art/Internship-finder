@@ -241,6 +241,7 @@
                 <span class="text-slate-400 font-medium">Sort by:</span>
                 <select id="sort-by" class="bg-transparent font-bold text-slate-700 hover:text-indigo-600 focus:outline-none cursor-pointer">
                   <option value="newest">Latest Posted</option>
+                  <option value="match-high">🎯 Highest AI Skill Match</option>
                   <option value="stipend-high">Highest Stipend</option>
                   <option value="deadline">Application Deadline Soonest</option>
                 </select>
@@ -256,6 +257,49 @@
             </div>
 
           </div>
+
+          <!-- AI Skill Matcher & Profile Interactive Bar -->
+          <div class="mt-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-indigo-900/40 relative overflow-hidden">
+            <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+              <div class="max-w-xl">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 flex items-center gap-1">
+                    <i data-lucide="sparkles" class="w-3 h-3 text-amber-300"></i>
+                    AI Resume Match Engine
+                  </span>
+                  <span class="text-xs text-indigo-300/80">• Instant Skill Gap Analysis</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-bold tracking-tight">Personalize with Your Skills</h3>
+                <p class="text-xs sm:text-sm text-slate-300 mt-0.5">
+                  Click skills you know to see instant <strong>Match % Badges</strong> and skill gap breakdowns on every role.
+                </p>
+              </div>
+
+              <!-- Selected Count & Actions -->
+              <div class="flex items-center gap-3">
+                <div class="text-right hidden sm:block">
+                  <div id="active-skills-count" class="text-xs font-bold text-indigo-300">4 skills active</div>
+                  <div class="text-[10px] text-slate-400">Live AI compatibility scoring</div>
+                </div>
+                <button 
+                  onclick="resetUserSkills()" 
+                  class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-slate-200 hover:text-white transition-all border border-white/10 flex items-center gap-1"
+                  title="Reset your skills"
+                >
+                  <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            <!-- Skill Pills & Custom Input -->
+            <div class="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center gap-2 relative z-10" id="skill-pills-container">
+              <!-- Dynamically rendered by app.js -->
+            </div>
+          </div>
+
         </div>
       </div>
 

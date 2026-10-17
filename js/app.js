@@ -7,6 +7,7 @@ let appState = {
   savedIds: JSON.parse(localStorage.getItem('internflow_saved_ids') || '[]'),
   applications: JSON.parse(localStorage.getItem('internflow_applications') || '[]'),
   queries: JSON.parse(localStorage.getItem('internflow_user_queries') || '[]'),
+  userSkills: JSON.parse(localStorage.getItem('internflow_user_skills') || JSON.stringify(DEFAULT_USER_SKILLS)),
   filters: {
     search: '',
     domain: 'All Domains',
@@ -36,6 +37,12 @@ function saveApplications() {
 
 function saveUserQueries() {
   localStorage.setItem('internflow_user_queries', JSON.stringify(appState.queries));
+}
+
+function saveUserSkills() {
+  localStorage.setItem('internflow_user_skills', JSON.stringify(appState.userSkills));
+  renderSkillPills();
+  renderInternshipList();
 }
 
 function updateNavCounters() {
@@ -155,6 +162,10 @@ function getFilteredInternships() {
   }).sort((a, b) => {
     if (appState.filters.sortBy === 'newest') {
       return new Date(b.postedDate) - new Date(a.postedDate);
+    } else if (appState.filters.sortBy === 'match-high') {
+      const matchB = calculateMatchScore(b).percent;
+      const matchA = calculateMatchScore(a).percent;
+      return matchB - matchA;
     } else if (appState.filters.sortBy === 'stipend-high') {
       return b.stipendAmount - a.stipendAmount;
     } else if (appState.filters.sortBy === 'deadline') {
@@ -164,14 +175,66 @@ function getFilteredInternships() {
   });
 }
 
+// AI Match Score Calculator
+function calculateMatchScore(internship) {
+  if (!appState.userSkills || appState.userSkills.length === 0) {
+    return { percent: 0, matched: [], missing: internship.tags };
+  }
+
+  const matched = [];
+  const missing = [];
+
+  internship.tags.forEach(tag => {
+    const lowerTag = tag.toLowerCase();
+    const isMatch = appState.userSkills.some(userSkill => {
+      const u = userSkill.toLowerCase();
+      return lowerTag.includes(u) || u.includes(lowerTag);
+    });
+
+    if (isMatch) {
+      matched.push(tag);
+    } else {
+      missing.push(tag);
+    }
+  });
+
+  const totalTags = Math.max(1, internship.tags.length);
+  let percent = Math.round((matched.length / totalTags) * 100);
+  if (matched.length > 0 && percent < 45) percent = 45;
+  if (percent > 98) percent = 98;
+  if (matched.length === internship.tags.length) percent = 100;
+
+  return { percent, matched, missing };
+}
+
 // Render Card Component
 function createInternshipCardHtml(item) {
   const isSaved = appState.savedIds.includes(item.id);
   const isApplied = appState.applications.some(app => app.internshipId === item.id);
+  const match = calculateMatchScore(item);
 
   let workplaceBadgeClass = 'badge-remote';
   if (item.workplaceType === 'Hybrid') workplaceBadgeClass = 'badge-hybrid';
   if (item.workplaceType === 'In-Office') workplaceBadgeClass = 'badge-in-office';
+
+  let matchBadgeHtml = '';
+  if (appState.userSkills && appState.userSkills.length > 0) {
+    let colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    let icon = '🎯';
+    if (match.percent < 60) {
+      colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
+      icon = '🌱';
+    } else if (match.percent < 80) {
+      colorClass = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      icon = '⚡';
+    }
+    matchBadgeHtml = `
+      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${colorClass}" title="${match.matched.length} of ${item.tags.length} skills match your profile">
+        <span>${icon}</span>
+        <span>${match.percent}% Match</span>
+      </span>
+    `;
+  }
 
   return `
     <div class="group bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-300 flex flex-col justify-between overflow-hidden p-6 relative">
@@ -181,7 +244,10 @@ function createInternshipCardHtml(item) {
           <div class="flex items-center gap-3">
             <img src="${item.logo}" alt="${item.company}" class="w-12 h-12 rounded-xl object-cover border border-slate-100 shadow-sm flex-shrink-0" onerror="this.src='https://placehold.co/80x80/indigo/white?text=${encodeURIComponent(item.company[0])}'">
             <div>
-              <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">${item.domain}</p>
+              <div class="flex items-center gap-2 mb-0.5">
+                <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">${item.domain}</p>
+                ${matchBadgeHtml}
+              </div>
               <h3 class="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">${item.title}</h3>
               <p class="text-sm text-slate-500 font-medium">${item.company}</p>
             </div>
@@ -215,12 +281,22 @@ function createInternshipCardHtml(item) {
           </span>
         </div>
 
-        <!-- Tags -->
+        <!-- Tags with AI Skill Overlap Highlighting -->
         <div class="flex flex-wrap gap-1.5 mb-5">
-          ${item.tags.slice(0, 3).map(tag => `
-            <span class="text-[11px] font-medium bg-slate-50 text-slate-600 px-2.5 py-0.5 rounded-md border border-slate-200/60">${tag}</span>
-          `).join('')}
-          ${item.tags.length > 3 ? `<span class="text-[11px] font-medium text-slate-400 px-1 py-0.5">+${item.tags.length - 3}</span>` : ''}
+          ${item.tags.slice(0, 4).map(tag => {
+            const isSkillMatched = match.matched.some(m => m.toLowerCase() === tag.toLowerCase());
+            return `
+              <span class="text-[11px] font-medium px-2.5 py-0.5 rounded-md border flex items-center gap-1 ${
+                isSkillMatched 
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold' 
+                  : 'bg-slate-50 text-slate-600 border-slate-200/60'
+              }">
+                ${isSkillMatched ? '<i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>' : ''}
+                ${tag}
+              </span>
+            `;
+          }).join('')}
+          ${item.tags.length > 4 ? `<span class="text-[11px] font-medium text-slate-400 px-1 py-0.5">+${item.tags.length - 4}</span>` : ''}
         </div>
       </div>
 
@@ -508,6 +584,7 @@ function openDetailsModal(id) {
   appState.selectedInternshipId = id;
   const isSaved = appState.savedIds.includes(id);
   const isApplied = appState.applications.some(app => app.internshipId === id);
+  const match = calculateMatchScore(item);
 
   const modalContainer = document.getElementById('modal-container');
   if (!modalContainer) return;
@@ -515,6 +592,16 @@ function openDetailsModal(id) {
   let workplaceBadgeClass = 'badge-remote';
   if (item.workplaceType === 'Hybrid') workplaceBadgeClass = 'badge-hybrid';
   if (item.workplaceType === 'In-Office') workplaceBadgeClass = 'badge-in-office';
+
+  let matchBadgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+  let matchAdvice = 'Outstanding match! Your skills strongly align with this role\'s requirements.';
+  if (match.percent < 60) {
+    matchBadgeClass = 'bg-amber-50 text-amber-800 border-amber-200';
+    matchAdvice = `Foundational match. Consider brushing up on ${match.missing.slice(0, 2).join(' or ') || 'recommended technologies'} to strengthen your interview readiness.`;
+  } else if (match.percent < 80) {
+    matchBadgeClass = 'bg-indigo-50 text-indigo-800 border-indigo-200';
+    matchAdvice = `Strong alignment! You possess primary requirements; highlighting ${match.missing[0] || 'your relevant projects'} will make you a top applicant.`;
+  }
 
   modalContainer.innerHTML = `
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-backdrop" onclick="closeModalOnBackdrop(event)">
@@ -583,6 +670,62 @@ function openDetailsModal(id) {
               <span class="text-xs text-slate-400 block font-medium">Apply Before</span>
               <span class="text-sm font-bold text-rose-600">${new Date(item.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
+          </div>
+
+          <!-- AI Skill Gap & Readiness Card -->
+          <div class="bg-gradient-to-br from-indigo-50/70 via-slate-50 to-violet-50/70 rounded-2xl p-5 border border-indigo-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-sm">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-slate-900">AI Skill Match & Readiness Report</h4>
+                  <p class="text-[11px] text-slate-500">Evaluated against your active skills profile</p>
+                </div>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold border ${matchBadgeClass}">
+                🎯 ${match.percent}% Compatibility
+              </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden my-3">
+              <div class="bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 h-full rounded-full transition-all duration-500" style="width: ${match.percent}%"></div>
+            </div>
+
+            <!-- Skills You Have vs Skills to Learn -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-3">
+              <div class="bg-white p-3 rounded-xl border border-emerald-100 shadow-xs">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block mb-1.5 flex items-center gap-1">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                  Skills You Have (${match.matched.length})
+                </span>
+                <div class="flex flex-wrap gap-1">
+                  ${match.matched.length > 0 ? match.matched.map(s => `
+                    <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 text-[11px]">${s}</span>
+                  `).join('') : '<span class="text-slate-400 italic text-[11px]">No exact tag overlap</span>'}
+                </div>
+              </div>
+
+              <div class="bg-white p-3 rounded-xl border border-amber-100 shadow-xs">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 block mb-1.5 flex items-center gap-1">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                  Skills to Learn / Highlight (${match.missing.length})
+                </span>
+                <div class="flex flex-wrap gap-1">
+                  ${match.missing.length > 0 ? match.missing.map(s => `
+                    <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-semibold border border-amber-200 text-[11px]">${s}</span>
+                  `).join('') : '<span class="text-emerald-600 font-semibold text-[11px]">All required skills matched! 🎉</span>'}
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Insight Note -->
+            <p class="text-xs text-slate-600 italic flex items-center gap-1.5 pt-1 border-t border-indigo-100/60">
+              <i data-lucide="bot" class="w-3.5 h-3.5 text-indigo-500 flex-shrink-0"></i>
+              <span>${matchAdvice}</span>
+            </p>
           </div>
 
           <!-- About Role -->
@@ -830,15 +973,27 @@ function openApplicationModal(id) {
             <p id="resume-error" class="hidden text-xs text-rose-500 mt-1 font-medium">Please attach a valid resume before submitting.</p>
           </div>
 
-          <!-- Cover Note -->
+          <!-- Cover Note with AI Generator -->
           <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5" for="applicant-note">
-              Why are you a great fit for this internship? <span class="text-slate-400 font-normal lowercase">(Optional)</span>
-            </label>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700" for="applicant-note">
+                Why are you a great fit? <span class="text-slate-400 font-normal lowercase">(Optional)</span>
+              </label>
+              <button 
+                type="button" 
+                id="ai-pitch-btn"
+                onclick="generateAiPitch('${item.id}')"
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-gradient-to-r from-violet-600 via-indigo-600 to-indigo-700 text-white shadow-sm hover:shadow-indigo-200 hover:scale-105 active:scale-95 transition-all"
+                title="Automatically generate an impressive elevator pitch tailored to this role"
+              >
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i>
+                <span>✨ Auto-Draft with AI</span>
+              </button>
+            </div>
             <textarea 
               id="applicant-note" 
-              rows="3" 
-              placeholder="Highlight any projects, relevant hackathons, coursework or achievements that align with this role..."
+              rows="4" 
+              placeholder="Highlight any projects, relevant hackathons, coursework or achievements that align with this role, or click 'Auto-Draft with AI' above..."
               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all resize-none"
             ></textarea>
           </div>
@@ -1534,10 +1689,142 @@ function renderUserQueries() {
   lucide.createIcons();
 }
 
+// ----------------- AI PITCH & SKILLS MATCHING LOGIC -----------------
+
+function generateAiPitch(id) {
+  const item = appState.internships.find(i => i.id === id);
+  if (!item) return;
+
+  const btn = document.getElementById('ai-pitch-btn');
+  const textarea = document.getElementById('applicant-note');
+  const nameInput = document.getElementById('applicant-name');
+  if (!textarea) return;
+
+  const candidateName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'a passionate applicant';
+  const match = calculateMatchScore(item);
+  const matchedSkillsText = match.matched.length > 0 
+    ? match.matched.slice(0, 3).join(', ') 
+    : (appState.userSkills.slice(0, 3).join(', ') || 'modern industry technologies');
+
+  if (btn) {
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Generating pitch...</span>`;
+    lucide.createIcons();
+    btn.disabled = true;
+  }
+
+  setTimeout(() => {
+    let pitch = '';
+    if (item.domain === 'Software Engineering') {
+      pitch = `Hi ${item.company} Hiring Team! I am ${candidateName}, thrilled to apply for the ${item.title} position. With hands-on experience in ${matchedSkillsText}, I have built responsive, production-ready web projects and thrive in fast-paced collaborative engineering teams. I am eager to contribute to ${item.company}'s codebase, learn from your principal engineers, and deliver scalable value from Day 1.`;
+    } else if (item.domain === 'Data Science & AI') {
+      pitch = `Hello ${item.company} Team! I am writing to express my strong enthusiasm for the ${item.title} internship. Having worked extensively with ${matchedSkillsText}, statistical modeling, and data pipelines, I love transforming complex datasets into actionable business intelligence. I look forward to tackling high-impact data challenges at ${item.company} while expanding my analytical skillset.`;
+    } else if (item.domain === 'UI/UX Design') {
+      pitch = `Dear ${item.company} Design Team! As an aspiring product designer skilled in ${matchedSkillsText} and user-centered design systems, I would love to contribute to the ${item.title} opening. I specialize in turning user friction points into delightful, intuitive micro-interactions and would be excited to partner with your engineers to elevate ${item.company}'s product experience.`;
+    } else if (item.domain === 'Cybersecurity') {
+      pitch = `Hi ${item.company} Security Team! I am eager to apply for the ${item.title} role. With a rigorous background in ${matchedSkillsText}, vulnerability assessment, and security best practices, I am passionate about hardening systems and protecting user trust. I am excited to bring my proactive mindset to ${item.company}'s defense infrastructure.`;
+    } else {
+      pitch = `Hi ${item.company} Team! I am ${candidateName}, excited to apply for the ${item.title} role. With a strong track record utilizing ${matchedSkillsText} to deliver measurable outcomes, I bring curiosity, discipline, and a customer-first approach. I would love the chance to learn and drive high-impact initiatives at ${item.company}.`;
+    }
+
+    textarea.value = pitch;
+    textarea.focus();
+
+    if (btn) {
+      btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-300"></i><span>Drafted!</span>`;
+      lucide.createIcons();
+      setTimeout(() => {
+        btn.innerHTML = `<i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i><span>✨ Re-generate Pitch</span>`;
+        btn.disabled = false;
+        lucide.createIcons();
+      }, 2000);
+    }
+
+    showToast(`✨ AI Pitch generated for ${item.company}!`, 'success');
+  }, 450);
+}
+
+function renderSkillPills() {
+  const container = document.getElementById('skill-pills-container');
+  const countEl = document.getElementById('active-skills-count');
+  if (!container) return;
+
+  if (countEl) {
+    countEl.textContent = `${appState.userSkills.length} skill${appState.userSkills.length === 1 ? '' : 's'} active`;
+  }
+
+  const allSkills = Array.from(new Set([...POPULAR_SKILLS, ...appState.userSkills]));
+
+  let html = allSkills.map(skill => {
+    const isActive = appState.userSkills.includes(skill);
+    return `
+      <button 
+        type="button"
+        onclick="toggleUserSkill('${skill}')"
+        class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 ${
+          isActive
+            ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25 ring-2 ring-indigo-400/50'
+            : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60'
+        }"
+      >
+        <i data-lucide="${isActive ? 'check' : 'plus'}" class="w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400'}"></i>
+        <span>${skill}</span>
+      </button>
+    `;
+  }).join('');
+
+  html += `
+    <div class="relative flex items-center">
+      <input 
+        type="text" 
+        id="custom-skill-input" 
+        placeholder="+ Add custom skill..." 
+        onkeydown="handleCustomSkillKeydown(event)"
+        class="bg-slate-800/90 border border-slate-700 text-white placeholder-slate-400 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-slate-800 w-36 transition-all"
+      />
+    </div>
+  `;
+
+  container.innerHTML = html;
+  lucide.createIcons();
+}
+
+function toggleUserSkill(skill) {
+  const idx = appState.userSkills.indexOf(skill);
+  if (idx > -1) {
+    appState.userSkills.splice(idx, 1);
+    showToast(`Removed "${skill}" from skill profile`, 'info');
+  } else {
+    appState.userSkills.push(skill);
+    showToast(`Added "${skill}" to skill profile!`, 'success');
+  }
+  saveUserSkills();
+}
+
+function handleCustomSkillKeydown(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const val = event.target.value.trim();
+    if (!val) return;
+    if (!appState.userSkills.includes(val)) {
+      appState.userSkills.push(val);
+      saveUserSkills();
+      showToast(`Added "${val}" to your profile!`, 'success');
+    }
+    event.target.value = '';
+  }
+}
+
+function resetUserSkills() {
+  appState.userSkills = [...DEFAULT_USER_SKILLS];
+  saveUserSkills();
+  showToast('Reset skills to default profile', 'info');
+}
+
 // Initial Boot
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateNavCounters();
+  renderSkillPills();
   renderInternshipList();
 
   // Check URL params for direct link: ?internship=int-001 or ?view=help
