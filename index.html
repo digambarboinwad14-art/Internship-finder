@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InternFlow — Discover, Filter & Apply to High-Impact Internships</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts & Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-2 z-50"></div>
+
+  <!-- Modal Container -->
+  <div id="modal-container" class="hidden"></div>
+
+  <!-- Header / Navigation Bar -->
+  <header class="sticky top-0 z-40 glass-nav">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+        <!-- Logo -->
+        <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('browse')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="font-display text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-700 bg-clip-text text-transparent">
+              InternFlow
+            </span>
+            <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full ml-1.5 border border-indigo-100">
+              Prototype
+            </span>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="hidden md:flex items-center gap-1 sm:gap-2">
+          <button 
+            data-view="browse" 
+            class="nav-link-btn px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 text-indigo-600 border-indigo-600"
+          >
+            <i data-lucide="compass" class="w-4 h-4"></i>
+            Browse Roles
+          </button>
+          
+          <button 
+            data-view="saved" 
+            class="nav-link-btn px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 flex items-center gap-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100/60"
+          >
+            <i data-lucide="bookmark" class="w-4 h-4"></i>
+            Saved
+            <span id="nav-saved-count" class="hidden px-2 py-0.5 text-xs font-bold rounded-full bg-indigo-100 text-indigo-700">0</span>
+          </button>
+
+          <button 
+            data-view="dashboard" 
+            class="nav-link-btn px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 flex items-center gap-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100/60"
+          >
+            <i data-lucide="briefcase" class="w-4 h-4"></i>
+            My Applications
+            <span id="nav-applied-count" class="hidden px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700">0</span>
+          </button>
+        </nav>
+
+        <!-- Right Side CTA / User Badge -->
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200/80 text-xs font-semibold text-slate-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Live Hiring Season '26</span>
+          </div>
+
+          <!-- Mobile Hamburger -->
+          <button id="mobile-menu-toggle" class="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Navigation -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-4 space-y-1 shadow-lg">
+      <button onclick="switchView('browse'); document.getElementById('mobile-menu').classList.add('hidden');" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2">
+        <i data-lucide="compass" class="w-4 h-4"></i>
+        Browse Internships
+      </button>
+      <button onclick="switchView('saved'); document.getElementById('mobile-menu').classList.add('hidden');" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2">
+        <i data-lucide="bookmark" class="w-4 h-4"></i>
+        Saved Opportunities
+      </button>
+      <button onclick="switchView('dashboard'); document.getElementById('mobile-menu').classList.add('hidden');" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2">
+        <i data-lucide="briefcase" class="w-4 h-4"></i>
+        My Applications
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="flex-1">
+
+    <!-- VIEW: BROWSE INTERNSHIPS -->
+    <section id="view-browse" class="view-container">
+      
+      <!-- Hero Section -->
+      <div class="relative bg-gradient-to-b from-indigo-50/70 via-slate-50 to-slate-50 border-b border-slate-200/60 pt-10 pb-12 sm:pt-14 sm:pb-16 overflow-hidden">
+        <!-- Background decorative blobs -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-200/40 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute top-10 -right-20 w-80 h-80 bg-violet-200/30 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div class="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100/80 text-indigo-700 mb-4 border border-indigo-200">
+              <i data-lucide="rocket" class="w-3.5 h-3.5"></i>
+              Verified High-Impact Opportunities
+            </span>
+            <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
+              Launch Your Career with Top Tech Internships
+            </h1>
+            <p class="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
+              Explore vetted roles at high-growth startups and tech giants. Filter by domain, compensation, and workplace preference, then apply seamlessly with 1-click tracking.
+            </p>
+          </div>
+
+          <!-- Hero Search & Filter Control Bar -->
+          <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-200/80 p-4 sm:p-6 transition-all">
+            
+            <!-- Main Search Input -->
+            <div class="relative mb-5">
+              <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+              <input 
+                type="text" 
+                id="search-input" 
+                placeholder="Search by role title, company name, tech skills (e.g., React, Python, UI/UX)..." 
+                class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-inner"
+              />
+            </div>
+
+            <!-- Filters Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
+              <!-- Domain Filter -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
+                  <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-500"></i>
+                  Field / Domain
+                </label>
+                <select id="filter-domain" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"></select>
+              </div>
+
+              <!-- Workplace Type Filter -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-500"></i>
+                  Workplace Type
+                </label>
+                <select id="filter-workplace" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"></select>
+              </div>
+
+              <!-- Duration Filter -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
+                  <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-500"></i>
+                  Duration
+                </label>
+                <select id="filter-duration" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"></select>
+              </div>
+
+              <!-- Minimum Stipend Slider -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                    <i data-lucide="dollar-sign" class="w-3.5 h-3.5 text-indigo-500"></i>
+                    Min Stipend
+                  </label>
+                  <span id="stipend-value-display" class="text-xs font-extrabold text-indigo-600">$0+</span>
+                </div>
+                <input 
+                  type="range" 
+                  id="filter-stipend" 
+                  min="0" 
+                  max="3500" 
+                  step="250" 
+                  value="0" 
+                  class="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <!-- Bottom Sub-bar (Sort & Clear) -->
+            <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="text-slate-400 font-medium">Sort by:</span>
+                <select id="sort-by" class="bg-transparent font-bold text-slate-700 hover:text-indigo-600 focus:outline-none cursor-pointer">
+                  <option value="newest">Latest Posted</option>
+                  <option value="stipend-high">Highest Stipend</option>
+                  <option value="deadline">Application Deadline Soonest</option>
+                </select>
+              </div>
+
+              <button 
+                onclick="resetFilters()" 
+                class="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1"
+              >
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                Reset all filters
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Internship Results Section -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <!-- Results count & Quick tag chips -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div id="results-count" class="text-sm text-slate-500 font-medium"></div>
+
+          <!-- Quick tags pills -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            <span class="text-xs text-slate-400 font-semibold whitespace-nowrap">Popular:</span>
+            <button onclick="document.getElementById('search-input').value='React'; appState.filters.search='React'; renderInternshipList();" class="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-all whitespace-nowrap">React</button>
+            <button onclick="document.getElementById('search-input').value='Python'; appState.filters.search='Python'; renderInternshipList();" class="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-all whitespace-nowrap">Python</button>
+            <button onclick="document.getElementById('search-input').value='Figma'; appState.filters.search='Figma'; renderInternshipList();" class="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-all whitespace-nowrap">Figma</button>
+            <button onclick="document.getElementById('filter-workplace').value='Remote'; appState.filters.workplaceType='Remote'; renderInternshipList();" class="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition-all whitespace-nowrap">Remote Only</button>
+          </div>
+        </div>
+
+        <!-- Cards Grid -->
+        <div id="internships-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </div>
+    </section>
+
+    <!-- VIEW: SAVED INTERNSHIPS -->
+    <section id="view-saved" class="view-container hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-5 mb-8">
+          <div>
+            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Your Shortlist</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Saved Opportunities</h2>
+            <p id="saved-count-label" class="text-sm text-slate-500 mt-1"></p>
+          </div>
+          <button onclick="switchView('browse')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Find more roles
+          </button>
+        </div>
+
+        <div id="saved-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </div>
+    </section>
+
+    <!-- VIEW: APPLICANT DASHBOARD -->
+    <section id="view-dashboard" class="view-container hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-5 mb-8">
+          <div>
+            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Candidate Portal</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Applications Dashboard</h2>
+            <p class="text-sm text-slate-500 mt-1">Monitor real-time progress and status updates on all your submitted internship applications.</p>
+          </div>
+          <button onclick="switchView('browse')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-1.5">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            Browse More Roles
+          </button>
+        </div>
+
+        <!-- Metrics Overview Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <!-- Metric 1 -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Applied</span>
+              <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <i data-lucide="send" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div id="dash-metric-total" class="text-2xl font-extrabold text-slate-900">0</div>
+          </div>
+
+          <!-- Metric 2 -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">In Review</span>
+              <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div id="dash-metric-review" class="text-2xl font-extrabold text-amber-600">0</div>
+          </div>
+
+          <!-- Metric 3 -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Shortlisted</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="award" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div id="dash-metric-shortlisted" class="text-2xl font-extrabold text-emerald-600">0</div>
+          </div>
+
+          <!-- Metric 4 -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Bookmarks</span>
+              <div class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+                <i data-lucide="bookmark" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div id="dash-metric-saved" class="text-2xl font-extrabold text-violet-600">0</div>
+          </div>
+        </div>
+
+        <!-- Application List Table -->
+        <div id="dashboard-applications-list"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200/80 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
+            IF
+          </div>
+          <span class="text-sm font-bold text-slate-900">InternFlow Portal Prototype</span>
+          <span class="text-xs text-slate-400">© 2026 Webathon Edition</span>
+        </div>
+
+        <div class="flex items-center gap-6 text-xs text-slate-500 font-medium">
+          <a href="#" onclick="switchView('browse')" class="hover:text-indigo-600 transition-colors">Browse Opportunities</a>
+          <a href="#" onclick="switchView('saved')" class="hover:text-indigo-600 transition-colors">Saved Roles</a>
+          <a href="#" onclick="switchView('dashboard')" class="hover:text-indigo-600 transition-colors">Application Tracker</a>
+          <a href="#" onclick="resetFilters(); showToast('Demo data reloaded', 'info')" class="hover:text-indigo-600 transition-colors">Reset Demo</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
