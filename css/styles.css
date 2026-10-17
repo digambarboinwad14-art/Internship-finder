@@ -159,3 +159,12 @@ body {
   border-color: #4f46e5;
   background-color: #eef2ff;
 }
+
+/* FAQ Accordion Transitions */
+.faq-accordion-body {
+  transition: max-height 0.3s ease-in-out, opacity 0.25s ease-in-out;
+}
+
+.faq-cat-btn:active {
+  transform: scale(0.97);
+}

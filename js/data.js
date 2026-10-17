@@ -332,3 +332,67 @@ const DURATIONS = [
   "4 Months",
   "6 Months"
 ];
+
+// Knowledge base / FAQ data
+const FAQS_DATA = [
+  {
+    id: "faq-01",
+    category: "applications",
+    question: "How do I apply for an internship on InternFlow?",
+    answer: "Find any internship that matches your skills on the Browse Roles page. Click the <strong>'Apply Now'</strong> button on any card or inside the Opportunity Details modal. Fill in your contact info, start date, weekly availability, attach your resume (PDF/DOCX), and submit. Your application will be recorded instantly!"
+  },
+  {
+    id: "faq-02",
+    category: "applications",
+    question: "Where can I track the status of my applications?",
+    answer: "Navigate to the <strong>'My Applications'</strong> tab in the navigation bar. You will find real-time metric counters (Total Applied, In Review, Shortlisted) along with a structured dashboard table showing your submitted applications, timestamps, and active status badges."
+  },
+  {
+    id: "faq-03",
+    category: "applications",
+    question: "Can I withdraw or review an application I previously submitted?",
+    answer: "Yes! In the <strong>'My Applications'</strong> dashboard, click the <strong>'View Submission'</strong> button on any application row to review your submitted details and uploaded resume. You can also click the red <strong>'Withdraw'</strong> button to revoke your application if you've accepted another offer."
+  },
+  {
+    id: "faq-04",
+    category: "filters",
+    question: "How does the search and multi-criteria filtering work?",
+    answer: "You can search by keyword (title, company, description, or tech stack like React, Python, or Figma) in the search bar. You can also combine filters for Field / Domain, Workplace Type (Remote, Hybrid, In-Office), and Duration. All filters update the opportunity list live in real time without refreshing the page."
+  },
+  {
+    id: "faq-05",
+    category: "filters",
+    question: "How does the Minimum Stipend slider work?",
+    answer: "The stipend slider lets you filter out roles that pay below your desired compensation threshold (from $0 to $3,500+/month). Moving the slider immediately narrows down results to internships matching or exceeding that monthly stipend."
+  },
+  {
+    id: "faq-06",
+    category: "stipends",
+    question: "Are the internships and compensation figures verified?",
+    answer: "Yes, every listing on InternFlow undergoes verification before being published. All stipends displayed are guaranteed monthly compensation figures provided directly by partner employers. In addition, many roles feature Pre-Placement Offer (PPO) potential."
+  },
+  {
+    id: "faq-07",
+    category: "stipends",
+    question: "What is the difference between Remote, Hybrid, and In-Office roles?",
+    answer: "<strong>Remote:</strong> Work from anywhere globally or within specified country timezones.<br><strong>Hybrid:</strong> 2-3 days in office and remaining days remote.<br><strong>In-Office:</strong> Full-time presence at the employer's headquarters or tech campus."
+  },
+  {
+    id: "faq-08",
+    category: "account",
+    question: "Where are my saved roles and applications stored? Will I lose them on refresh?",
+    answer: "InternFlow automatically stores your saved bookmarks, submitted applications, and support tickets in your browser's persistent <code>localStorage</code>. Your data is preserved safely even if you refresh the page or close your browser!"
+  },
+  {
+    id: "faq-09",
+    category: "applications",
+    question: "Is there any cost or fee to search or apply for internships?",
+    answer: "No! InternFlow is 100% free for students and early-career candidates. There are zero hidden fees, subscriptions, or paywalls to apply for any verified opportunity."
+  },
+  {
+    id: "faq-10",
+    category: "account",
+    question: "What if I have an unanswered query or need technical assistance?",
+    answer: "You can submit a direct inquiry using the <strong>'Have a Specific Query?'</strong> form on the right side of this Help page, or email our support desk directly at <strong>support@internflow.dev</strong>. We respond in under 2 hours during hiring season."
+  }
+];

@@ -2,10 +2,11 @@
 
 // State
 let appState = {
-  activeView: 'browse', // 'browse', 'saved', 'dashboard'
+  activeView: 'browse', // 'browse', 'saved', 'dashboard', 'help'
   internships: [...INITIAL_INTERNSHIPS],
   savedIds: JSON.parse(localStorage.getItem('internflow_saved_ids') || '[]'),
   applications: JSON.parse(localStorage.getItem('internflow_applications') || '[]'),
+  queries: JSON.parse(localStorage.getItem('internflow_user_queries') || '[]'),
   filters: {
     search: '',
     domain: 'All Domains',
@@ -14,6 +15,9 @@ let appState = {
     minStipend: 0,
     sortBy: 'newest'
   },
+  faqCategory: 'all',
+  faqSearch: '',
+  expandedFaqs: new Set(['faq-01']),
   selectedInternshipId: null,
   activeModal: null, // 'detail', 'apply', 'view-app'
   currentResumeFile: null
@@ -28,6 +32,10 @@ function saveSavedIds() {
 function saveApplications() {
   localStorage.setItem('internflow_applications', JSON.stringify(appState.applications));
   updateNavCounters();
+}
+
+function saveUserQueries() {
+  localStorage.setItem('internflow_user_queries', JSON.stringify(appState.queries));
 }
 
 function updateNavCounters() {
@@ -101,6 +109,8 @@ function switchView(viewName) {
     renderSavedList();
   } else if (viewName === 'dashboard') {
     renderDashboard();
+  } else if (viewName === 'help') {
+    renderHelpCenter();
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1280,12 +1290,248 @@ function setupEventListeners() {
     });
   }
 
-  // Escape key to close modal
+    // Escape key to close modal
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeModal();
     }
   });
+
+  // FAQ Live Search
+  const faqSearchInput = document.getElementById('faq-search-input');
+  if (faqSearchInput) {
+    faqSearchInput.addEventListener('input', e => {
+      appState.faqSearch = e.target.value.toLowerCase().trim();
+      renderFaqList();
+    });
+  }
+}
+
+// ----------------- HELP & SUPPORT CENTER LOGIC -----------------
+
+function renderHelpCenter() {
+  renderFaqList();
+  renderUserQueries();
+  lucide.createIcons();
+}
+
+function setFaqCategory(category) {
+  appState.faqCategory = category;
+  document.querySelectorAll('.faq-cat-btn').forEach(btn => {
+    if (btn.dataset.category === category) {
+      btn.className = 'faq-cat-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-indigo-600 text-white shadow-sm';
+    } else {
+      btn.className = 'faq-cat-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300';
+    }
+  });
+  renderFaqList();
+}
+
+function toggleFaq(faqId) {
+  if (appState.expandedFaqs.has(faqId)) {
+    appState.expandedFaqs.delete(faqId);
+  } else {
+    appState.expandedFaqs.add(faqId);
+  }
+  renderFaqList();
+}
+
+function renderFaqList() {
+  const container = document.getElementById('faq-list-container');
+  const countEl = document.getElementById('faq-results-count');
+  if (!container) return;
+
+  const filtered = FAQS_DATA.filter(faq => {
+    if (appState.faqCategory !== 'all' && faq.category !== appState.faqCategory) {
+      return false;
+    }
+    if (appState.faqSearch) {
+      const q = appState.faqSearch.toLowerCase();
+      const inQ = faq.question.toLowerCase().includes(q);
+      const inA = faq.answer.toLowerCase().includes(q);
+      return inQ || inA;
+    }
+    return true;
+  });
+
+  if (countEl) {
+    countEl.textContent = `Showing ${filtered.length} of ${FAQS_DATA.length} questions`;
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white rounded-3xl border border-slate-200 p-8 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+          <i data-lucide="help-circle" class="w-6 h-6"></i>
+        </div>
+        <h4 class="text-base font-bold text-slate-900 mb-1">No matching questions found</h4>
+        <p class="text-xs text-slate-500 mb-4 max-w-sm mx-auto">
+          We couldn't find any FAQs matching "${appState.faqSearch}". Try searching another keyword or submit your query using the form on the right!
+        </p>
+        <button 
+          onclick="document.getElementById('faq-search-input').value=''; appState.faqSearch=''; setFaqCategory('all');" 
+          class="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors"
+        >
+          Reset FAQ Search
+        </button>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = filtered.map(faq => {
+    const isExpanded = appState.expandedFaqs.has(faq.id);
+    
+    let catBadge = '';
+    if (faq.category === 'applications') {
+      catBadge = `<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-blue-50 text-blue-700 border border-blue-200">Applications</span>`;
+    } else if (faq.category === 'filters') {
+      catBadge = `<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-purple-50 text-purple-700 border border-purple-200">Search & Filter</span>`;
+    } else if (faq.category === 'stipends') {
+      catBadge = `<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">Stipends</span>`;
+    } else {
+      catBadge = `<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-amber-50 text-amber-700 border border-amber-200">Data & Storage</span>`;
+    }
+
+    return `
+      <div class="bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
+        isExpanded ? 'border-indigo-300 shadow-sm shadow-indigo-100 ring-1 ring-indigo-200' : 'border-slate-200 hover:border-slate-300'
+      }">
+        <button 
+          onclick="toggleFaq('${faq.id}')" 
+          class="w-full text-left p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors focus:outline-none"
+        >
+          <div class="flex items-center gap-3">
+            ${catBadge}
+            <span class="text-sm sm:text-base font-bold text-slate-900 leading-snug">${faq.question}</span>
+          </div>
+          <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 flex-shrink-0 transition-transform duration-200 ${
+            isExpanded ? 'rotate-180 bg-indigo-100 text-indigo-700' : ''
+          }">
+            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          </div>
+        </button>
+        ${
+          isExpanded
+            ? `
+              <div class="px-4 pb-5 pt-1 sm:px-5 sm:pb-5 border-t border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed bg-slate-50/60">
+                ${faq.answer}
+              </div>
+            `
+            : ''
+        }
+      </div>
+    `;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+function handleQuerySubmit(event) {
+  event.preventDefault();
+
+  const name = document.getElementById('query-name').value.trim();
+  const email = document.getElementById('query-email').value.trim();
+  const category = document.getElementById('query-category').value;
+  const priority = document.getElementById('query-priority').value;
+  const subject = document.getElementById('query-subject').value.trim();
+  const message = document.getElementById('query-message').value.trim();
+
+  if (!name || !email || !subject || !message) {
+    showToast('Please fill out all required fields', 'error');
+    return;
+  }
+
+  const ticketId = `IF-QRY-${Math.floor(1000 + Math.random() * 9000)}`;
+  const now = new Date();
+  const formattedDate = now.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  const newQuery = {
+    ticketId,
+    name,
+    email,
+    category,
+    priority,
+    subject,
+    message,
+    status: 'Received',
+    date: formattedDate
+  };
+
+  appState.queries.unshift(newQuery);
+  saveUserQueries();
+
+  // Reset form
+  document.getElementById('help-query-form').reset();
+
+  showToast(`Query registered! Ticket: ${ticketId}`, 'success');
+  renderUserQueries();
+}
+
+function deleteUserQuery(ticketId) {
+  appState.queries = appState.queries.filter(q => q.ticketId !== ticketId);
+  saveUserQueries();
+  showToast('Query ticket removed', 'info');
+  renderUserQueries();
+}
+
+function renderUserQueries() {
+  const listEl = document.getElementById('user-queries-list');
+  const countEl = document.getElementById('user-queries-count');
+  if (!listEl) return;
+
+  if (countEl) {
+    countEl.textContent = appState.queries.length;
+  }
+
+  if (appState.queries.length === 0) {
+    listEl.innerHTML = `
+      <div class="text-center py-6 text-slate-400">
+        <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+        <p class="text-xs">No active queries submitted yet.</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">Use the form above if you have an inquiry!</p>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  listEl.innerHTML = appState.queries.map(q => `
+    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs transition-all hover:bg-slate-100/70">
+      <div class="flex items-center justify-between gap-2 mb-1.5">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-indigo-600 font-mono text-[11px]">${q.ticketId}</span>
+          <span class="px-2 py-0.5 rounded-full font-bold text-[10px] ${
+            q.status === 'Resolved' 
+              ? 'bg-emerald-100 text-emerald-700' 
+              : 'bg-amber-100 text-amber-800'
+          }">
+            ${q.status}
+          </span>
+        </div>
+        <span class="text-[10px] text-slate-400">${q.date}</span>
+      </div>
+      <div class="font-bold text-slate-800 text-xs mb-1">${q.subject}</div>
+      <p class="text-slate-500 text-[11px] line-clamp-2 mb-2 leading-relaxed">${q.message}</p>
+      <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 text-[10px]">
+        <span class="text-slate-400 font-medium">Category: <strong class="text-slate-600">${q.category}</strong></span>
+        <button 
+          onclick="deleteUserQuery('${q.ticketId}')" 
+          class="text-rose-500 hover:text-rose-700 font-semibold hover:underline flex items-center gap-1"
+        >
+          <i data-lucide="trash-2" class="w-3 h-3"></i>
+          Dismiss
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  lucide.createIcons();
 }
 
 // Initial Boot
@@ -1294,10 +1540,14 @@ document.addEventListener('DOMContentLoaded', () => {
   updateNavCounters();
   renderInternshipList();
 
-  // Check URL params for direct link: ?internship=int-001
+  // Check URL params for direct link: ?internship=int-001 or ?view=help
   const urlParams = new URLSearchParams(window.location.search);
   const directId = urlParams.get('internship');
-  if (directId) {
+  const directView = urlParams.get('view');
+
+  if (directView && ['browse', 'saved', 'dashboard', 'help'].includes(directView)) {
+    switchView(directView);
+  } else if (directId) {
     const item = appState.internships.find(i => i.id === directId);
     if (item) {
       setTimeout(() => openDetailsModal(directId), 200);

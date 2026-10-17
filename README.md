@@ -45,7 +45,15 @@
    - Save opportunities with 1-click bookmark buttons on cards or details modal.
    - Persistent across browser sessions via `localStorage`.
 
-6. **Design & UX Highlights**
+6. **Interactive Help & FAQ Knowledge Base**
+   - **Real-Time FAQ Search**: Search across dozens of common questions regarding applications, filters, stipends, and policies.
+   - **Categorized Accordion**: Filter FAQs by *Applications & Tracking*, *Search & Filters*, *Stipends & Verification*, and *Bookmarks & Local Data*.
+   - **Direct Query Submission Form**: Fill in candidate questions or technical issues with category & priority selectors.
+   - **Live Ticket Tracker**: Generates realistic tracking IDs (`#IF-QRY-XXXX`) with persistent status monitoring in `localStorage`.
+   - **Support Desk & Contact Info**: Direct support contact email (`support@internflow.dev`) and 2-hour response guarantee.
+   - **Floating Quick Help Launcher**: Accessible with 1 click from anywhere on the platform.
+
+7. **Design & UX Highlights**
    - Modern glassmorphism navigation with live counters for saved and applied internships.
    - Smooth entrance animations and micro-interactions.
    - Floating toast notification system for instant user feedback.
